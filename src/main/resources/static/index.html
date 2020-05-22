@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<html>
+<head>
+    <title>Forecast Application</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<h1>Weather Forecast for Estonia</h1>
+Select date:
+<div id="app">
+    <ul>
+        <li class="li" v-for="date in dates" @click="showTimeSection(date)">{{date}}</li>
+    </ul>
+    <div class="app" v-show="showTime">
+        Select time:
+        <div>
+            <br>
+            <a href="#" id="dayTimeZone" @click="getForecastInfo('Day'); return false;">Day</a>
+            <a href="#" id="nightTimeZone" @click="getForecastInfo('Night'); return false;">Night</a>
+        </div>
+        <br>
+    </div>
+    <div v-show="showGeneralInfo">
+        <li v-for="(value, forecast) in foreCasts" v-if="value != null && value != ''">{{forecast}} : {{value}}</li>
+    </div>
+    <div v-show="showDetailsForInfoHasPlaces">
+        <div>
+            <li v-for="(value, forecast) in foreCasts"
+                v-if="value != null && value != '' && forecast != 'windDtos' && forecast != 'placesDtos'">{{forecast}} :
+                {{value}}
+            </li>
+        </div>
+    </div>
+    <br>
+    <div v-show="showCityInfoSectionVisible">
+        Choose city or wind to see details:
+        <br>
+        <div class="cityWindSection">
+            <div class="citySection">
+                <li class="li" v-for="city in placesInfo" @click="showPlacesAndWindInfo(city)">{{city.name}}</li>
+            </div>
+            <div class="windSection">
+                <li class="li" v-for="wind in windsInfo" @click="showPlacesAndWindInfo(wind)">{{wind.name}}</li>
+            </div>
+        </div>
+    </div>
+    <div v-show="showPlaceAndWindInfo" class="cityAndWindDetailSection">
+        Details:
+        <li v-for="(value, forecast) in selectedCity" v-if="value != null && value != '' && forecast != 'Name'">
+            {{forecast}} : {{value}}
+        </li>
+    </div>
+</div>
+<script>
+    const getDateURL = "http://localhost:8080/dates";
+    const getForeCastURL = "http://localhost:8080/forecastInfo";
+
+    new Vue({
+        el: '#app',
+        data() {
+            return {
+                dates: [],
+                showTime: false,
+                foreCasts: [],
+                showDetailsForInfoHasPlaces: false,
+                showGeneralInfo: false,
+                showCityInfoSectionVisible: false,
+                selectedCity: [],
+                showPlaceAndWindInfo: false,
+                placesInfo: [],
+                windsInfo: []
+            }
+        },
+        methods: {
+            showTimeSection(date) {
+                selectedDate = date;
+                this.showTime = true;
+                this.showGeneralInfo = false;
+                this.showDetailsForInfoHasPlaces = false;
+                this.showCityInfoSectionVisible = false;
+                this.showPlaceAndWindInfo = false;
+            },
+            getForecastInfo(time) {
+                fetch(getForeCastURL + "?date=" + selectedDate + "&time=" + time)
+                    .then(response => {
+                        return response.json();
+                    })
+                    .then(forecasts => {
+                        this.showGeneralInfo = true;
+                        if (forecasts.placesDtos != null || forecasts.windDtos != null) {
+                            this.formatForeCastInfoHasPlaceAndWind(forecasts);
+                            this.formatAndShowPlaces(forecasts.placesDtos, forecasts.windDtos);
+                            this.placesInfo = forecasts.placesDtos;
+                            this.windsInfo = forecasts.windDtos;
+                            this.showCityInfoSectionVisible = true;
+                            this.showPlaceAndWindInfo = false;
+                        } else {
+                            this.foreCasts = this.replaceKeysToReadableFormat(forecasts);
+                            this.showPlaceAndWindInfo = false;
+                        }
+                    })
+            },
+            formatForeCastInfoHasPlaceAndWind(forecasts) {
+                this.showGeneralInfo = false;
+                this.showDetailsForInfoHasPlaces = true;
+                this.foreCasts = this.replaceKeysToReadableFormat(forecasts);
+
+            },
+            formatAndShowPlaces(places, winds) {
+                this.placesInfo = places;
+                this.windsInfo = winds;
+            },
+            showPlacesAndWindInfo(city) {
+                this.selectedCity = this.replaceKeysToReadableFormat(city);
+                this.showPlaceAndWindInfo = true;
+            },
+            replaceKeysToReadableFormat(foreCasts) {
+                return (({
+                             tempMin,
+                             tempMax,
+                             text,
+                             phenomenon,
+                             speedMax,
+                             speedMin,
+                             sea,
+                             name,
+                             peipsi,
+                             direction,
+                             ...rest
+                         }) => Object.assign(rest, {
+                    "Minimum Temperature": tempMin,
+                    "Maximum Temperature": tempMax,
+                    "Explanation": text,
+                    "Status": phenomenon,
+                    "Minimum Speed": speedMin,
+                    "Maximum Speed": speedMax,
+                    "Sea Temperature": sea,
+                    "Name": name,
+                    "Peipsi Lake": peipsi,
+                    "Direction": direction
+                }))(foreCasts);
+            }
+        },
+        created() {
+            fetch(getDateURL)
+                .then(response => {
+                    return response.json();
+                })
+                .then(dates => {
+                    this.dates = dates;
+                })
+        }
+    });
+
+</script>
+</body>
+</html>

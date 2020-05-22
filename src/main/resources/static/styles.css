@@ -1,0 +1,22 @@
+.cityAndWindSection {
+    width: 100%;
+}
+
+.citySection {
+    width: 20%;
+    height: 100px;
+    float: left;
+}
+
+.windSection {
+    /*margin-left: 50%;*/
+    height: 100px;
+}
+
+.cityAndWindDetailSection {
+    margin-top: 20px;
+}
+
+.li:hover {
+    color: blue;
+}
